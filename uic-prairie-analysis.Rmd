@@ -1,0 +1,63 @@
+---
+title: "SIP - UIC Plant Survey Analysis"
+author: "Gavin McNicol"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+```
+
+
+```{r load-libraries}
+library(tidyverse)
+```
+
+```{r read-data}
+data <- read_csv("data/mean_wt_c.csv")
+data2 <- read_csv("data/total_richness.csv")
+data <- data %>% left_join(data2)
+```
+
+```{r joined-view}
+glimpse(data)
+```
+
+```{r wrangling}
+pat <- "(\\d)+"
+pat_2 <- "[^0-9]+"
+map_data <- data %>% 
+  mutate(x_coord = as.numeric(str_extract(plot, pat)),
+         x_coord = 26 - x_coord,
+         y_coord = str_extract(plot, pat_2),
+         y_coord = ifelse(y_coord == "F fence", "F", y_coord),
+         y_coord = as.numeric(factor(y_coord)),
+         y_coord = 13 - y_coord) 
+  # pivot_longer(c(mean_wt_c, total_richness), names_to = "metric")
+```
+
+```{r heatmap-richness}
+map_data %>% 
+  ggplot(aes(x = x_coord, y = y_coord, fill = total_richness)) + 
+  geom_raster() +
+  labs(title = "UIC Prairie 2020 Plant Survey",
+       subtitle = "Total Richness") +
+  scale_fill_viridis_c() +
+  theme_void() +
+  guides(fill = guide_legend("Total Richness"))
+ggsave("output/richness.png", type = "png", height = 4, width = 6.5)
+```
+
+```{r heatmap-mean-c}
+map_data %>% 
+  ggplot(aes(x = x_coord, y = y_coord, fill = mean_wt_c)) + 
+  geom_raster() +
+  labs(title = "UIC Prairie 2020 Plant Survey",
+       subtitle = "Mean Weighted Conservatism") +
+  scale_fill_viridis_c() +
+  theme_void() +
+  guides(fill = guide_legend("Mean Wt. C"))
+ggsave("output/mean_wt_c.png", type = "png", height = 4, width = 6.5)
+```
+
